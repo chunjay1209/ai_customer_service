@@ -1832,6 +1832,7 @@ def page_price_check():
                             "关键词": " / ".join(m["keywords"]) if m.get("keywords") else "",
                             "命中商品": m.get("matched_name") or "-",
                             "报价": m.get("price") or "-",
+                            "库存": m.get("stock") or "-",
                             "匹配状态": f"✅ 已匹配 ({idx+1}/{total})",
                         })
                         is_first = False
@@ -1841,6 +1842,7 @@ def page_price_check():
                         "关键词": " / ".join(d["keywords"]) if d["keywords"] else "",
                         "命中商品": d.get("matched_name") or "-",
                         "报价": d.get("price") or "-",
+                        "库存": d.get("stock") or "-",
                         "匹配状态": "✅ 已匹配" if d.get("matched") else "❌ 未匹配",
                     })
             df = pd.DataFrame(detail)

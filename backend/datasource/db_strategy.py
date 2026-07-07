@@ -29,10 +29,11 @@ SELECT
     b.jg2      AS `jg2`,
     b.jg4      AS `jg4`,
     b.jg5      AS `jg5`,
-    b.kcsl     AS `库存数量`,
+    k.kmsl     AS `库存数量`,
     b.kccb     AS `库存成本`
 FROM dm_spxx s
 INNER JOIN b2b_bjd b ON s.tid = b.spdm
+LEFT JOIN v_get_kmsl k ON s.tid = k.spdm
 WHERE
     s.gsdm = %(company_code)s
     AND s.yxbz = 'Y'

@@ -148,6 +148,7 @@ class PriceLineDetail(BaseModel):
     price: Optional[str] = None
     matched_name: Optional[str] = None
     matched: bool
+    stock: Optional[str] = None  # 库存数量
 
 
 class PriceCheckResponse(BaseModel):

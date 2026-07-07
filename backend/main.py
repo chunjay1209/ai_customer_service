@@ -587,38 +587,47 @@ def platform_tenant_price(
             exp_kws = expanded_keywords[result_idx]
             price: Optional[str] = None
             matched_name: Optional[str] = None
+            stock: Optional[str] = None
             if result_idx < len(batch_results):
-                price, matched_name = batch_results[result_idx]
+                price, matched_name, stock = batch_results[result_idx]
             if price is not None:
-                line_matches.append({"keywords": exp_kws, "price": price, "matched_name": matched_name})
+                line_matches.append({
+                    "keywords": exp_kws, "price": price,
+                    "matched_name": matched_name, "stock": stock,
+                })
             result_idx += 1
 
         kw_idx += 1
 
         if not line_matches:
             out_lines.append(raw)
-            details.append({"original": raw, "keywords": keywords, "price": None, "matched_name": None, "matched": False})
+            details.append({"original": raw, "keywords": keywords, "price": None, "matched_name": None, "matched": False, "stock": None})
         elif len(line_matches) == 1:
             m = line_matches[0]
             price = m["price"]
             matched_name = m["matched_name"]
+            stock = m["stock"]
             if price == "0":
                 out_lines.append(raw)
             else:
                 out_lines.append(f"{raw}   {price}")
             match_count += 1
-            details.append({"original": raw, "keywords": m["keywords"], "price": price, "matched_name": matched_name, "matched": True})
+            details.append({"original": raw, "keywords": m["keywords"], "price": price, "matched_name": matched_name, "matched": True, "stock": stock})
         else:
             match_count += len(line_matches)
             detail_entry = {"original": raw, "keywords": keywords, "matched": True, "multi_matches": []}
             for m in line_matches:
                 price = m["price"]
                 matched_name = m["matched_name"]
+                stock = m["stock"]
                 if price == "0":
                     out_lines.append(f"{raw} [{matched_name}]")
                 else:
                     out_lines.append(f"{raw} [{matched_name}]   {price}")
-                detail_entry["multi_matches"].append({"price": price, "matched_name": matched_name, "keywords": m["keywords"]})
+                detail_entry["multi_matches"].append({
+                    "price": price, "matched_name": matched_name,
+                    "keywords": m["keywords"], "stock": stock,
+                })
             details.append(detail_entry)
     # 获取最后同步时间
     cfg_obj = db.query(models.TenantConfig).filter(models.TenantConfig.tenant_id == tenant.id).first()
@@ -1364,13 +1373,15 @@ def price_check(
             exp_kws = batch_keywords[batch_idx]
             price: Optional[str] = None
             matched_name: Optional[str] = None
+            stock: Optional[str] = None
             if batch_idx < len(batch_results):
-                price, matched_name = batch_results[batch_idx]
+                price, matched_name, stock = batch_results[batch_idx]
             if price is not None:
                 line_matches.append({
                     "keywords": exp_kws,
                     "price": price,
                     "matched_name": matched_name,
+                    "stock": stock,
                 })
             batch_idx += 1
 
@@ -1385,6 +1396,7 @@ def price_check(
                 "price": None,
                 "matched": False,
                 "matched_name": None,
+                "stock": None,
             })
         elif has_color and len(line_matches) >= 2:
             # 多颜色输出：单行格式"商品 颜色1 价格1 /颜色2 价格2"
@@ -1399,6 +1411,7 @@ def price_check(
             for m in line_matches:
                 color_kw = next((k for k in m["keywords"] if _is_color_keyword(k)), "")
                 price = m["price"]
+                stock = m["stock"]
                 if price == "0":
                     color_parts.append(f"{color_kw}")
                 else:
@@ -1407,6 +1420,7 @@ def price_check(
                     "price": price,
                     "matched_name": m["matched_name"],
                     "keywords": m["keywords"],
+                    "stock": stock,
                 })
             out_lines.append(f"{raw}  {' /'.join(color_parts)}")
             # 详情表：多颜色时只取第一个匹配
@@ -1414,12 +1428,14 @@ def price_check(
             detail_entry["price"] = first["price"]
             detail_entry["matched_name"] = first["matched_name"]
             detail_entry["keywords"] = first["keywords"]
+            detail_entry["stock"] = first["stock"]
             details.append(detail_entry)
         else:
             # 单颜色/无颜色匹配：保持原有格式（一行输出一个结果）
             m = line_matches[0]
             price = m["price"]
             matched_name = m["matched_name"]
+            stock = m["stock"]
             if price == "0":
                 out_lines.append(raw)
             else:
@@ -1431,6 +1447,7 @@ def price_check(
                 "price": price,
                 "matched": True,
                 "matched_name": matched_name,
+                "stock": stock,
             })
         kw_idx += 1
 

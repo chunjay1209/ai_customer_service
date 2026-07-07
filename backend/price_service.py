@@ -547,7 +547,7 @@ def search_price_in_rows_batch(
     price_field_name: str,
     all_keywords: list[list[str]],
     price_field: Optional[str] = None,
-) -> list[tuple[Optional[str], Optional[str]]]:
+) -> list[tuple[Optional[str], Optional[str], Optional[str]]]:
     """批量搜索：预计算归一化数据，一次遍历处理所有行的关键词。
 
     相比逐行调用 search_price_in_rows，避免了每行都重新格式化 rows 和归一化名称，
@@ -561,10 +561,10 @@ def search_price_in_rows_batch(
         price_field: 指定报价等级字段名
 
     Returns:
-        [(price, matched_name), ...] 与 all_keywords 等长
+        [(price, matched_name, stock), ...] 与 all_keywords 等长
     """
     if not rows or not all_keywords:
-        return [(None, None)] * len(all_keywords)
+        return [(None, None, None)] * len(all_keywords)
 
     from .feishu_api import match_keywords_in_rows_batch
 

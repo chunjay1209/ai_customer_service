@@ -648,10 +648,10 @@ def match_keywords_in_rows_batch(
         price_field: 可选，从 extra_json.price_map 中取指定字段的报价（如 "jg4"）
 
     Returns:
-        [(price, matched_name), ...] 与 all_keywords 等长
+        [(price, matched_name, stock), ...] 与 all_keywords 等长
     """
     if not rows or not all_keywords:
-        return [(None, None)] * len(all_keywords)
+        return [(None, None, None)] * len(all_keywords)
 
     # 预计算：一次性归一化所有商品名 + 构建模型 token 快速索引
     t_precompute = time.time()
@@ -663,11 +663,11 @@ def match_keywords_in_rows_batch(
     _perf_log.info(f"[PERF] match_keywords: precompute+index took {t_precompute_end - t_precompute:.3f}s, "
                     f"rows={len(rows)}, index_keys={len(model_index)}")
 
-    results: list[tuple[Optional[str], Optional[str]]] = []
+    results: list[tuple[Optional[str], Optional[str], Optional[str]]] = []
 
     for keywords in all_keywords:
         if not keywords:
-            results.append((None, None))
+            results.append((None, None, None))
             continue
 
         # ── 关键词分类/预处理 ──
@@ -720,6 +720,7 @@ def match_keywords_in_rows_batch(
         best_hits = 0
         best_model_hits = -1
         best_penalty = 0
+        best_idx: Optional[int] = None
 
         _debug_kws = ','.join(keywords) if len(keywords) <= 6 else ','.join(keywords[:6]) + '...'
 
@@ -839,6 +840,7 @@ def match_keywords_in_rows_batch(
                 best_price = price
                 best_name = name
                 best_penalty = _penalty
+                best_idx = i
 
         # ── Fallback：精确匹配失败时，放宽容量和颜色约束 ──
         if (best_price is None and (has_capacity_keywords or has_color_keywords)) or best_penalty > 0:
@@ -926,6 +928,7 @@ def match_keywords_in_rows_batch(
                         best_model_hits = model_hit_count - _penalty
                         best_price = price
                         best_name = name
+                        best_idx = i
 
             # 阶段 2：完全放宽，型号匹配即可
             if best_price is None:
@@ -1005,6 +1008,7 @@ def match_keywords_in_rows_batch(
                         best_model_hits = model_hit_count
                         best_price = price
                         best_name = name
+                        best_idx = i
 
         # 处理 price_field（从 extra_json 取指定报价等级）
         if best_price is not None and price_field:
@@ -1019,7 +1023,17 @@ def match_keywords_in_rows_batch(
                         pass
                     break
 
-        results.append((best_price, best_name))
+        # 提取库存数量
+        stock_value: Optional[str] = None
+        if best_idx is not None:
+            try:
+                extra = __import__('json').loads(rows[best_idx].get("extra_json", "{}") or "{}")
+                sv = extra.get("库存数量", "")
+                stock_value = str(sv).strip() if sv is not None else None
+            except Exception:
+                pass
+
+        results.append((best_price, best_name, stock_value))
 
     _perf_log.info(f"[PERF] match_keywords: per-keyword matching took {time.time() - t_precompute_end:.3f}s, "
                     f"for {len(all_keywords)} keyword sets")

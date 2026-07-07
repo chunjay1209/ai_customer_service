@@ -5,11 +5,22 @@
     用户名：  admin
     密码：    admin123
 
-用法（在项目根目录执行）：
-    python -m backend.init_db
+用法（两种方式均可）：
+    python -m backend.init_db          # 在项目根目录执行
+    python3 backend/init_db.py         # 在项目根目录执行
+    python3 init_db.py                 # 在 backend 目录执行
 """
 
 from __future__ import annotations
+
+import os
+import sys
+
+# 将项目根目录（backend 的父目录）加入 sys.path，确保无论以何种方式运行都能正确导入 backend 模块
+_backend_dir = os.path.dirname(os.path.abspath(__file__))
+_project_root = os.path.dirname(_backend_dir)
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
 
 from backend import models, auth, database  # noqa: F401  确保模型 & 模块被注册
 from backend.auth import hash_password
